@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>派對大電視 Pro</title>
+    <style>
+        :root {
+            --bg-color: #2c3e50;
+            --text-color: #ecf0f1;
+            --accent: #f39c12;
+            --secondary: #34495e;
+            --correct: #27ae60;
+            --skip: #c0392b;
+            --input-bg: #fff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            touch-action: none;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Common Screen Styles */
+        .screen {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            width: 100%;
+            transition: background-color 0.3s;
+            overflow-y: auto; /* Allow scrolling on home screen */
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        /* --- HOME SCREEN --- */
+        #home-screen {
+            padding: 20px 0;
+        }
+
+        h1 { font-size: 2.5rem; margin: 10px 0; text-shadow: 2px 2px 0 #000; text-align: center; }
+        
+        .category-section {
+            width: 90%;
+            max-width: 600px;
+            margin-bottom: 20px;
+        }
+
+        .category-title {
+            font-size: 1.2rem;
+            color: var(--accent);
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button {
+            background: var(--text-color);
+            color: var(--bg-color);
+            border: none;
+            padding: 12px;
+            font-size: 1rem;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 3px 5px rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+            width: 100%;
+        }
+        button:active { transform: scale(0.96); }
+        .btn-start-custom { background: var(--accent); color: white; margin-top: 10px; }
+
+        /* Custom Input Area */
+        .custom-area {
+            background: var(--secondary);
+            padding: 15px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            margin-bottom: 40px; /* Space for scrolling */
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+            border-radius: 5px;
+            border: none;
+            padding: 10px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            resize: none;
+            margin-top: 5px;
+            font-family: inherit;
+        }
+
+        /* --- GAME SCREEN --- */
+        #game-screen {
+            justify-content: center;
+            overflow: hidden; /* No scroll in game */
+            text-align: center;
+        }
+        
+        #word-display {
+            font-size: 4.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            padding: 0 20px;
+            word-break: keep-all;
+        }
+        .info-bar {
+            position: absolute;
+            top: 20px;
+            display: flex;
+            justify-content: space-between;
+            width: 90%;
+            font-size: 1.5rem;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .instructions {
+            position: absolute;
+            bottom: 30px;
+            font-size: 1rem;
+            opacity: 0.7;
+        }
+
+        /* --- RESULT SCREEN --- */
+        #result-screen {
+            justify-content: center;
+            text-align: center;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            width: 80%;
+            max-width: 400px;
+        }
+        .stat-num { font-size: 3rem; color: var(--accent); }
+
+        /* Background States */
+        .bg-correct { background-color: var(--correct) !important; }
+        .bg-skip { background-color: var(--skip) !important; }
+    </style>
+</head>
+<body>
+
+    <div id="home-screen" class="screen active">
+        <h1>📺 派對大電視 Pro</h1>
+        <p style="margin-top:0; color:#aaa; font-size:0.9rem;">(放在額頭，螢幕向外)</p>
+        
+        <div id="categories-container">
+            </div>
+
+        <div class="custom-area">
+            <div style="font-weight:bold; color:var(--accent);">✏️ 自訂題目 (用逗號或換行分隔)</div>
+            <textarea id="custom-input" placeholder="例如：
+同事A
+老細
+茶水間
+..."></textarea>
+            <button class="btn-start-custom" onclick="startCustomGame()">開始自訂遊戲</button>
+        </div>
+        
+        <p style="font-size:0.8rem; color:#666; padding-bottom: 20px;">⚠️ iOS 用戶需允許動作權限</p>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div class="info-bar">
+            <span id="timer">60s</span>
+            <span id="score">0 分</span>
+        </div>
+        <div id="word-display">準備好未?</div>
+        <div class="instructions">
+            點頭 (螢幕向地) = 答啱 ✅<br>
+            抬頭 (螢幕向天) = Skip ❌
+        </div>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <h1>時間到！</h1>
+        <div class="stat-box">
+            <div>最終得分</div>
+            <div class="stat-num" id="final-score">0</div>
+        </div>
+        <button onclick="goHome()" style="width: auto; padding: 15px 40px;">返回主頁</button>
+    </div>
+
+    <script>
+        // --- 題庫資料 (Data with Categories) ---
+        const categories = {
+            "🔥 流行熱話 (2024/25)": {
+                "年度廣東歌": ["黑玻璃", "緊急聯絡人", "筆觸男孩憂鬱之死", "至少做一件離譜的事", "戀愛腦之死", "回憶半分鐘", "只要你不尷尬", "青春告別式", "小心碰頭", "隱形遊樂場", "E先生連環不幸事件"],
+                "大熱 K-Pop": ["APT.", "Supernova", "Magnetic", "Rockstar", "How Sweet", "Queencard", "Fate", "Spot!", "Klaxon", "Seven", "Flower", "Ditto"],
+                "網絡潮語": ["世一", "E Boy", "I 人", "破防", "會考4分", "Emo", "沉船", "0尊", "MM7", "Siu4", "Firm", "自肥"]
+            },
+            "🇭🇰 香港地道": {
+                "經典港產片": ["無間道", "食神", "少林足球", "家有囍事", "九品芝麻官", "寒戰", "古惑仔", "賭神", "歲月神偷", "國產凌凌漆", "阿飛正傳", "春娇与志明"],
+                "地道美食": ["魚蛋", "燒賣", "雞蛋仔", "菠蘿油", "格仔餅", "絲襪奶茶", "乾炒牛河", "西多士", "叉燒飯", "蛋撻", "碗仔翅", "臭豆腐", "楊枝甘露"],
+                "香港藝人": ["姜濤", "張敬軒", "Anson Lo", "古天樂", "黃子華", "林家謙", "鄧紫棋", "陳奕迅", "容祖兒", "劉德華", "周潤發", "梁朝偉"]
+            },
+            "🤸 輕鬆好玩": {
+                "動作題 (要做動作)": ["游水", "打麻雀", "化妝", "洗頭", "便秘", "求婚", "打邊爐", "揸車", "跳芭蕾舞", "舉重", "自拍", "飲醉酒", "做Gym"],
+                "動物世界": ["長頸鹿", "大笨象", "獅子", "熊貓", "企鵝", "樹懶", "袋鼠", "海豚", "變色龍", "猩猩", "哥斯拉", "水怪"]
+            }
+        };
+
+        // --- 遊戲狀態 ---
+        let currentWords = [];
+        let score = 0;
+        let timeLeft = 60;
+        let timerInterval;
+        let isGameActive = false;
+        let canTilt = true; 
+
+        // --- DOM Elements ---
+        const homeScreen = document.getElementById('home-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const wordDisplay = document.getElementById('word-display');
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const categoriesContainer = document.getElementById('categories-container');
+        const customInput = document.getElementById('custom-input');
+
+        // --- 初始化選單 (Render Categories) ---
+        function initMenu() {
+            categoriesContainer.innerHTML = '';
+
+            for (const [catName, themes] of Object.entries(categories)) {
+                // Create Category Section
+                const section = document.createElement('div');
+                section.className = 'category-section';
+
+                const title = document.createElement('div');
+                title.className = 'category-title';
+                title.innerText = catName;
+                section.appendChild(title);
+
+                const grid = document.createElement('div');
+                grid.className = 'theme-grid';
+
+                // Create Theme Buttons
+                for (const [themeName, words] of Object.entries(themes)) {
+                    const btn = document.createElement('button');
+                    btn.innerText = themeName;
+                    btn.onclick = () => prepareGame(words);
+                    grid.appendChild(btn);
+                }
+
+                section.appendChild(grid);
+                categoriesContainer.appendChild(section);
+            }
+        }
+
+        // --- 處理自訂遊戲 ---
+        function startCustomGame() {
+            const rawText = customInput.value;
+            // Split by newline or comma, trim whitespace, filter empty strings
+            const words = rawText.split(/[\n,，]+/).map(w => w.trim()).filter(w => w.length > 0);
+
+            if (words.length < 2) {
+                alert("請至少輸入 2 個詞語！");
+                return;
+            }
+            prepareGame(words);
+        }
+
+        // --- 遊戲準備與開始 ---
+        async function prepareGame(wordsList) {
+            // Request Permissions (iOS 13+)
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permissionState = await DeviceOrientationEvent.requestPermission();
+                    if (permissionState !== 'granted') {
+                        alert("需要動作權限才能玩體感模式！");
+                        return;
+                    }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            // Shuffle words
+            currentWords = [...wordsList].sort(() => 0.5 - Math.random());
+            
+            startGameLogic();
+        }
+
+        function startGameLogic() {
+            score = 0;
+            timeLeft = 60;
+            scoreDisplay.innerText = score + " 分";
+            timerDisplay.innerText = timeLeft + "s";
+            isGameActive = true;
+            canTilt = true;
+
+            homeScreen.classList.remove('active');
+            resultScreen.classList.remove('active');
+            gameScreen.classList.add('active');
+            gameScreen.className = "screen active"; 
+
+            nextWord();
+            
+            // Timer
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.innerText = timeLeft + "s";
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+
+            window.addEventListener('deviceorientation', handleOrientation);
+        }
+
+        function nextWord() {
+            if (currentWords.length === 0) {
+                wordDisplay.innerText = "題目完晒！";
+                setTimeout(endGame, 1500);
+                return;
+            }
+            const word = currentWords.pop();
+            wordDisplay.innerText = word;
+            gameScreen.className = "screen active"; // Reset colors
+            canTilt = true;
+        }
+
+        function handleAnswer(type) {
+            if (!isGameActive || !canTilt) return;
+            canTilt = false;
+
+            if (type === 'correct') {
+                score++;
+                scoreDisplay.innerText = score + " 分";
+                gameScreen.classList.add('bg-correct');
+                wordDisplay.innerText = "✅ 答啱！";
+            } else {
+                gameScreen.classList.add('bg-skip');
+                wordDisplay.innerText = "❌ Skip";
+            }
+        }
+
+        // --- 體感偵測 ---
+        function handleOrientation(event) {
+            if (!isGameActive) return;
+            const beta = event.beta; 
+
+            // Debounce/Reset zone (Upright)
+            if (!canTilt && beta > 60 && beta < 120) {
+                canTilt = true;
+                nextWord(); 
+                return;
+            }
+
+            if (canTilt) {
+                if (beta > 135) {
+                    handleAnswer('correct'); // Face down
+                } else if (beta < 35) {
+                    handleAnswer('skip'); // Face up
+                }
+            }
+        }
+
+        // Fallback Touch Controls
+        gameScreen.addEventListener('click', (e) => {
+            if (e.clientY < window.innerHeight / 2) {
+                if(canTilt) handleAnswer('skip');
+            } else {
+                if(canTilt) handleAnswer('correct');
+            }
+            setTimeout(() => {
+                if(!canTilt) { canTilt = true; nextWord(); }
+            }, 800);
+        });
+
+        function endGame() {
+            isGameActive = false;
+            clearInterval(timerInterval);
+            window.removeEventListener('deviceorientation', handleOrientation);
+            document.getElementById('final-score').innerText = score;
+            gameScreen.classList.remove('active');
+            resultScreen.classList.add('active');
+        }
+
+        function goHome() {
+            resultScreen.classList.remove('active');
+            homeScreen.classList.add('active');
+        }
+
+        // Run
+        initMenu();
+
+    </script>
+</body>
+</html>
