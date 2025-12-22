@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>派對大電視 Ultimate</title>
+    <title>派對大電視 Pro Max</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         :root {
@@ -41,7 +41,7 @@
 
         .screen.active { display: flex; }
 
-        /* --- HOME SCREEN --- */
+        /* --- HOME --- */
         #home-screen { padding: 20px 0; }
         h1 { font-size: 2.2rem; margin: 10px 0; text-shadow: 2px 2px 0 #000; }
         
@@ -54,7 +54,6 @@
             margin-bottom: 20px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
         }
         
         .time-control {
@@ -62,6 +61,7 @@
             align-items: center;
             gap: 10px;
             width: 100%;
+            font-weight: bold;
         }
         
         input[type="range"] {
@@ -99,7 +99,7 @@
             font-size: 1rem; box-sizing: border-box; resize: none; margin-top: 5px;
         }
 
-        /* --- GAME SCREEN --- */
+        /* --- GAME --- */
         #game-screen {
             justify-content: center;
             overflow: hidden;
@@ -107,7 +107,6 @@
             position: relative;
         }
         
-        /* SUPER BIG TEXT */
         #word-display {
             font-size: 18vw; 
             font-weight: 900;
@@ -139,7 +138,7 @@
             border-radius: 20px;
         }
 
-        /* --- RESULT SCREEN --- */
+        /* --- RESULT --- */
         #result-screen { padding: 20px 0; }
         .rank-title { font-size: 2.5rem; color: var(--accent); font-weight: 900; margin: 10px 0; animation: popIn 0.5s; }
         
@@ -163,7 +162,6 @@
         }
         .result-item:last-child { border-bottom: none; }
         .res-word { font-weight: bold; }
-        .res-icon { font-weight: bold; }
         .res-correct { color: var(--correct); }
         .res-skip { color: var(--skip); }
 
@@ -182,11 +180,11 @@
 <body>
 
     <div id="home-screen" class="screen active">
-        <h1>📺 派對大電視 <span style="font-size:1rem; vertical-align:middle; background:var(--accent); padding:2px 5px; border-radius:4px;">MAX</span></h1>
+        <h1>📺 派對大電視 <span style="font-size:1rem; vertical-align:middle; background:var(--accent); padding:2px 5px; border-radius:4px;">PRO</span></h1>
         
         <div class="settings-box">
             <div class="time-control">
-                <span>⏱️ 時限: <span id="time-val" style="color:var(--accent); font-weight:bold; width: 40px; display:inline-block;">60</span>秒</span>
+                <span>⏱️ 時限: <span id="time-val" style="color:var(--accent); font-weight:bold; width: 45px; display:inline-block;">60</span>秒</span>
                 <input type="range" id="time-slider" min="30" max="180" step="10" value="60" oninput="updateTimeVal(this.value)">
             </div>
         </div>
@@ -221,8 +219,7 @@ OT
         <div class="big-score" id="final-score">0</div>
         <div class="rank-title" id="rank-title"></div>
         
-        <div class="result-list-container" id="result-list">
-            </div>
+        <div class="result-list-container" id="result-list"></div>
 
         <button onclick="goHome()" style="width: 80%; max-width:300px; background:white; color:#333;">再來一局</button>
     </div>
@@ -230,8 +227,23 @@ OT
     <script>
         // --- DATA ---
         const categories = {
+            "🎵 K-Pop 跳舞歌 (30首)": {
+                "必跳 K-Pop": [
+                    "APT.", "Whiplash", "Power", "Mantra", "Supernova", 
+                    "Magnetic", "UP", "Queencard", "Hype Boy", "OMG", 
+                    "ETA", "Fighting (BSS)", "Eve, Psyche & The Bluebeard’s wife", "Antifragile", 
+                    "Seven", "Standing Next to You", "Dynamite", "Butter", "The Feels", 
+                    "Fancy", "Next Level", "After LIKE", "I AM", "Love Dive", 
+                    "Fast Forward", "Smoke", "Baggy Jeans", "God of Music", "Chk Chk Boom", "How Sweet"
+                ],
+                "大勢團體": [
+                    "aespa", "NewJeans", "IVE", "QWER", "DAY6", 
+                    "BLACKPINK", "G-Dragon", "SEVENTEEN", "ILLIT", "LE SSERAFIM", 
+                    "MAMAMOO", "BTS", "TWICE", "Stray Kids", "NCT"
+                ]
+            },
             "🧺 Picnic Day Special": {
-                "picnic day": [
+                "Picnic Day": [
                     "factorial", "recessive allele", "titration", "聲聲慢", "十四五規劃", 
                     "蛾兒雪柳黃金縷", "花間一壺酒", "蓮動下漁舟", "林黛玉", "唐僧", 
                     "粟米", "珍珠奶茶", "垃圾桶", "seventeen", "用背脊唱情歌", 
@@ -243,17 +255,10 @@ OT
                     "火腿通粉", "北極熊", "picnic"
                 ]
             },
-            "🎵 K-Pop Melon Top (最新)": {
-                "Melon霸榜": ["APT.", "Whiplash", "Happy", "Power", "Mantra", "Supernova", "Magnetic", "UP", "Love wins all", "Welcome to the Show"],
-                "大勢團體": ["aespa", "NewJeans", "IVE", "QWER", "DAY6", "BLACKPINK", "G-Dragon", "SEVENTEEN", "ILLIT", "LE SSERAFIM"]
-            },
-            "🇭🇰 香港流行 (2024/25)": {
+            "🇭🇰 香港流行 & 派對": {
                 "年度金曲": ["黑玻璃", "緊急聯絡人", "筆觸男孩憂鬱之死", "至少做一件離譜的事", "戀愛腦之死", "回憶半分鐘", "青春告別式", "小心碰頭", "隱形遊樂場"],
-                "歌手/名人": ["姜濤", "張敬軒", "Anson Lo", "林家謙", "Jeffrey", "Serrini", "MC張天賦", "尹光", "陳蕾", "COLLAR"]
-            },
-            "😂 派對必玩": {
-                "動作題": ["游水", "便秘", "化妝", "洗頭", "求婚", "打麻雀", "做Gym", "如廁中", "飲醉酒", "踩單車", "撩鼻屎", "殺曱甴"],
-                "經典港產片": ["無間道", "食神", "少林足球", "家有囍事", "寒戰", "古惑仔", "賭神", "九品芝麻官", "國產凌凌漆", "春娇与志明"]
+                "歌手/名人": ["姜濤", "張敬軒", "Anson Lo", "林家謙", "Jeffrey", "Serrini", "MC張天賦", "尹光", "陳蕾", "COLLAR"],
+                "動作題": ["游水", "便秘", "化妝", "洗頭", "求婚", "打麻雀", "做Gym", "如廁中", "飲醉酒", "踩單車", "撩鼻屎", "殺曱甴"]
             }
         };
 
@@ -323,8 +328,7 @@ OT
         function startGame() {
             score = 0;
             timeLeft = initialTime;
-            gameResults = []; // Reset history
-            
+            gameResults = []; 
             scoreDisplay.innerText = score;
             timerDisplay.innerText = timeLeft;
             isGameActive = true;
@@ -352,9 +356,9 @@ OT
                 return;
             }
             const word = currentWords.pop();
-            // Adjust font size based on length roughly
-            if(word.length > 8) wordDisplay.style.fontSize = "12vw";
-            else if(word.length > 4) wordDisplay.style.fontSize = "16vw";
+            // Font sizing logic
+            if(word.length > 10) wordDisplay.style.fontSize = "10vw";
+            else if(word.length > 6) wordDisplay.style.fontSize = "14vw";
             else wordDisplay.style.fontSize = "22vw";
             
             wordDisplay.innerText = word;
@@ -428,21 +432,27 @@ OT
                 resultList.appendChild(div);
             });
 
-            // Emotional Value
+            // --- 殘酷評分系統 (3層) ---
             let title = "";
-            if (score >= 15) title = "👑 神級玩家";
-            else if (score >= 10) title = "🔥 高手過招";
-            else if (score >= 5) title = "😎 普通人類";
-            else title = "🐢 豬隊友";
+            
+            // 1. 神級 (15分或以上) - 慶祝
+            if (score >= 15) {
+                title = "👑 派對之神";
+                confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
+            } 
+            // 2. 普通人 (5分 至 14分) - 冷淡
+            else if (score >= 5) {
+                title = "😐 普通市民";
+            } 
+            // 3. 廢柴 (0分 至 4分) - 負面/無情緒價值
+            else {
+                title = "🤡 氣氛破壞者"; // 夠 Mean
+            }
             
             rankTitle.innerText = title;
 
             gameScreen.classList.remove('active');
             resultScreen.classList.add('active');
-
-            if (score >= 5) {
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-            }
         }
 
         function goHome() {
