@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>派對大電視 Pro Max</title>
+    <title>派對大電視 Cloud Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         :root {
             --bg-color: #2c3e50;
@@ -16,278 +17,115 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            margin: 0;
-            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0; padding: 0;
             background-color: var(--bg-color);
             color: var(--text-color);
-            overflow: hidden;
-            touch-action: none;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+            overflow: hidden; touch-action: none;
+            display: flex; flex-direction: column; height: 100vh;
         }
 
-        .screen {
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            height: 100%;
-            width: 100%;
-            transition: background-color 0.2s;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
+        .screen { display: none; flex-direction: column; align-items: center; height: 100%; width: 100%; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .screen.active { display: flex; }
 
-        /* --- HOME --- */
+        /* HOME SCREEN */
         #home-screen { padding: 20px 0; }
         h1 { font-size: 2.2rem; margin: 10px 0; text-shadow: 2px 2px 0 #000; }
-        
-        .settings-box {
-            background: var(--secondary);
-            padding: 15px;
-            border-radius: 10px;
-            width: 90%;
-            max-width: 600px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-        }
-        
-        .time-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            width: 100%;
-            font-weight: bold;
-        }
-        
-        input[type="range"] {
-            flex-grow: 1;
-            accent-color: var(--accent);
-            height: 20px;
-        }
+        .loading-msg { color: var(--accent); font-weight: bold; margin: 20px; animation: blink 1s infinite; text-align:center; }
+        @keyframes blink { 50% { opacity: 0.5; } }
 
         .category-section { width: 90%; max-width: 600px; margin-bottom: 15px; }
-        .category-title {
-            font-size: 1.3rem;
-            color: var(--accent);
-            border-bottom: 2px solid var(--secondary);
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
+        .category-title { font-size: 1.3rem; color: var(--accent); border-bottom: 2px solid var(--secondary); margin-bottom: 10px; font-weight: bold; }
         .theme-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
         button {
-            background: var(--text-color);
-            color: var(--bg-color);
-            border: none;
-            padding: 15px;
-            font-size: 1.1rem;
-            border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
+            background: var(--text-color); color: var(--bg-color); border: none; padding: 15px;
+            font-size: 1.1rem; border-radius: 10px; font-weight: bold; cursor: pointer;
             box-shadow: 0 4px 0 rgba(0,0,0,0.2);
         }
         button:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.2); }
-        .btn-start-custom { background: var(--accent); color: white; width: 100%; margin-top: 10px; }
 
-        textarea {
-            width: 100%; height: 80px; border-radius: 5px; padding: 10px;
-            font-size: 1rem; box-sizing: border-box; resize: none; margin-top: 5px;
-        }
-
-        /* --- GAME --- */
-        #game-screen {
-            justify-content: center;
-            overflow: hidden;
-            text-align: center;
-            position: relative;
-        }
-        
-        #word-display {
-            font-size: 18vw; 
-            font-weight: 900;
-            line-height: 1.1;
-            padding: 0 10px;
-            word-break: keep-all;
-            text-align: center;
-        }
-        
-        .info-bar {
-            position: absolute;
-            top: 20px;
-            display: flex;
-            justify-content: space-between;
-            width: 90%;
-            font-size: 2rem;
-            font-weight: bold;
-            z-index: 10;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-        
-        .instructions {
-            position: absolute;
-            bottom: 30px;
-            font-size: 1.2rem;
-            opacity: 0.8;
-            background: rgba(0,0,0,0.3);
-            padding: 10px;
-            border-radius: 20px;
-        }
-
-        /* --- RESULT --- */
-        #result-screen { padding: 20px 0; }
-        .rank-title { font-size: 2.5rem; color: var(--accent); font-weight: 900; margin: 10px 0; animation: popIn 0.5s; }
-        
-        .result-list-container {
-            width: 90%;
-            max-width: 500px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            padding: 10px;
-            margin: 15px 0;
-            max-height: 40vh;
-            overflow-y: auto;
-        }
-
-        .result-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            font-size: 1.2rem;
-        }
-        .result-item:last-child { border-bottom: none; }
-        .res-word { font-weight: bold; }
-        .res-correct { color: var(--correct); }
-        .res-skip { color: var(--skip); }
-
-        .big-score { font-size: 4rem; font-weight: 900; margin: 0; line-height: 1; }
-
-        @keyframes popIn {
-            0% { transform: scale(0.5); opacity: 0; }
-            80% { transform: scale(1.1); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
+        /* GAME SCREEN */
+        #game-screen { justify-content: center; text-align: center; position: relative; }
+        #word-display { font-size: 18vw; font-weight: 900; line-height: 1.1; padding: 0 10px; word-break: keep-all; }
+        .info-bar { position: absolute; top: 20px; display: flex; justify-content: space-between; width: 90%; font-size: 2rem; font-weight: bold; z-index: 10; }
         .bg-correct { background-color: var(--correct) !important; }
         .bg-skip { background-color: var(--skip) !important; }
+
+        /* RESULT SCREEN */
+        #result-screen { padding: 20px 0; }
+        .big-score { font-size: 4rem; font-weight: 900; margin: 0; }
+        .rank-title { font-size: 2.5rem; color: var(--accent); font-weight: 900; margin: 10px 0; }
+        .result-list { width: 90%; max-width: 500px; background: rgba(255,255,255,0.1); border-radius: 10px; padding: 10px; margin: 15px 0; max-height: 40vh; overflow-y: auto; }
+        .result-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
     <div id="home-screen" class="screen active">
-        <h1>📺 派對大電視 <span style="font-size:1rem; vertical-align:middle; background:var(--accent); padding:2px 5px; border-radius:4px;">PRO</span></h1>
-        
-        <div class="settings-box">
-            <div class="time-control">
-                <span>⏱️ 時限: <span id="time-val" style="color:var(--accent); font-weight:bold; width: 45px; display:inline-block;">60</span>秒</span>
-                <input type="range" id="time-slider" min="30" max="180" step="10" value="60" oninput="updateTimeVal(this.value)">
-            </div>
-        </div>
-
+        <h1>📺 派對大電視 <span style="font-size:1rem; background:var(--accent); padding:2px 5px; border-radius:4px;">LIVE</span></h1>
+        <div id="loading" class="loading-msg">正在同步 Google Sheet 題庫...</div>
         <div id="categories-container"></div>
-
-        <div class="category-section">
-            <div class="category-title">✏️ 自訂題目</div>
-            <textarea id="custom-input" placeholder="例子：
-陳大文
-茶水間
-OT
-(換行分隔)"></textarea>
-            <button class="btn-start-custom" onclick="startCustomGame()">開始自訂遊戲</button>
-        </div>
-        <p style="color:#777; font-size:0.8rem; margin-bottom:30px;">⚠️ iOS 請允許動作權限</p>
+        <button onclick="location.reload()" style="margin-top:20px; font-size:0.8rem; padding:8px 15px; background:none; color:white; box-shadow:none; border:1px solid #555; border-radius:20px;">🔄 點擊刷新題庫</button>
     </div>
 
     <div id="game-screen" class="screen">
-        <div class="info-bar">
-            <span id="timer">60</span>
-            <span id="score">0</span>
-        </div>
+        <div class="info-bar"><span id="timer">60</span><span id="score">0</span></div>
         <div id="word-display">Ready?</div>
-        <div class="instructions">
-            點頭 = ✅ | 抬頭 = ❌
-        </div>
+        <div style="position:absolute; bottom:30px; opacity:0.6; background:rgba(0,0,0,0.2); padding:5px 15px; border-radius:15px;">點頭 ✅ | 抬頭 ❌</div>
     </div>
 
     <div id="result-screen" class="screen">
-        <div style="font-size:1.2rem; margin-top:20px;">時間到！最終得分</div>
+        <div style="font-size:1.2rem; margin-top:20px;">最終得分</div>
         <div class="big-score" id="final-score">0</div>
         <div class="rank-title" id="rank-title"></div>
-        
-        <div class="result-list-container" id="result-list"></div>
-
-        <button onclick="goHome()" style="width: 80%; max-width:300px; background:white; color:#333;">再來一局</button>
+        <div class="result-list" id="result-list"></div>
+        <button onclick="goHome()" style="width: 80%; background:white; color:#333;">返回主選單</button>
     </div>
 
     <script>
-        // --- DATA ---
-        const categories = {
-            "🎵 K-Pop 跳舞歌 (30首)": {
-                "必跳 K-Pop": [
-                    "APT.", "Whiplash", "Power", "Mantra", "Supernova", 
-                    "Magnetic", "UP", "Queencard", "Hype Boy", "OMG", 
-                    "ETA", "Fighting (BSS)", "Eve, Psyche & The Bluebeard’s wife", "Antifragile", 
-                    "Seven", "Standing Next to You", "Dynamite", "Butter", "The Feels", 
-                    "Fancy", "Next Level", "After LIKE", "I AM", "Love Dive", 
-                    "Fast Forward", "Smoke", "Baggy Jeans", "God of Music", "Chk Chk Boom", "How Sweet"
-                ],
-                "大勢團體": [
-                    "aespa", "NewJeans", "IVE", "QWER", "DAY6", 
-                    "BLACKPINK", "G-Dragon", "SEVENTEEN", "ILLIT", "LE SSERAFIM", 
-                    "MAMAMOO", "BTS", "TWICE", "Stray Kids", "NCT"
-                ]
-            },
-            "🧺 Picnic Day Special": {
-                "Picnic Day": [
-                    "factorial", "recessive allele", "titration", "聲聲慢", "十四五規劃", 
-                    "蛾兒雪柳黃金縷", "花間一壺酒", "蓮動下漁舟", "林黛玉", "唐僧", 
-                    "粟米", "珍珠奶茶", "垃圾桶", "seventeen", "用背脊唱情歌", 
-                    "張地庫", "黑玻璃", "用悲傷結了帳", "諸葛亮", "後主", 
-                    "先帝", "李白", "燈火闌珊處", "cristae", "LSM1", 
-                    "LCC", "NYK", "B sir", "chiikawa", "緣情寫景", 
-                    "借代", "辛棄疾", "汪明荃", "zootopia", "大寶冰室", 
-                    "Cedric", "麥當勞", "KFC", "披星戴月", "腐乳通菜", 
-                    "火腿通粉", "北極熊", "picnic"
-                ]
-            },
-            "🇭🇰 香港流行 & 派對": {
-                "年度金曲": ["黑玻璃", "緊急聯絡人", "筆觸男孩憂鬱之死", "至少做一件離譜的事", "戀愛腦之死", "回憶半分鐘", "青春告別式", "小心碰頭", "隱形遊樂場"],
-                "歌手/名人": ["姜濤", "張敬軒", "Anson Lo", "林家謙", "Jeffrey", "Serrini", "MC張天賦", "尹光", "陳蕾", "COLLAR"],
-                "動作題": ["游水", "便秘", "化妝", "洗頭", "求婚", "打麻雀", "做Gym", "如廁中", "飲醉酒", "踩單車", "撩鼻屎", "殺曱甴"]
-            }
-        };
+        // 已填入你的專屬 Google Sheet 連結
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS-boTTDGgpyB_26MVW0ciqBWTaqqJP9uRzlZcBMA0QeI7Cq2sQ877dcssXSJ89jTZtq1Fx7RB0p0h5/pub?gid=0&single=true&output=csv'; 
 
-        // --- STATE ---
+        let categories = {};
         let currentWords = [];
-        let gameResults = []; 
+        let gameResults = [];
         let score = 0;
         let timeLeft = 60;
-        let initialTime = 60;
         let timerInterval;
         let isGameActive = false;
-        let canTilt = true; 
+        let canTilt = true;
 
-        // --- ELEMENTS ---
-        const homeScreen = document.getElementById('home-screen');
-        const gameScreen = document.getElementById('game-screen');
-        const resultScreen = document.getElementById('result-screen');
-        const wordDisplay = document.getElementById('word-display');
-        const scoreDisplay = document.getElementById('score');
-        const timerDisplay = document.getElementById('timer');
-        const resultList = document.getElementById('result-list');
-        const rankTitle = document.getElementById('rank-title');
-        
-        function updateTimeVal(val) {
-            document.getElementById('time-val').innerText = val;
-            initialTime = parseInt(val);
+        function init() {
+            Papa.parse(SHEET_URL, {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    processData(results.data);
+                },
+                error: function() {
+                    document.getElementById('loading').innerText = "❌ 讀取失敗，請檢查網路或連結";
+                }
+            });
         }
 
-        function initMenu() {
+        function processData(data) {
+            categories = {};
+            data.forEach(row => {
+                const cat = row.Category;
+                const theme = row.Theme;
+                const rawWords = row.Words;
+                if (cat && theme && rawWords) {
+                    if (!categories[cat]) categories[cat] = {};
+                    // 支援直線 | 或全形逗號 ， 分隔
+                    categories[cat][theme] = rawWords.split(/[|，]+/).map(w => w.trim()).filter(w => w);
+                }
+            });
+            renderMenu();
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function renderMenu() {
             const container = document.getElementById('categories-container');
             container.innerHTML = '';
             for (const [catName, themes] of Object.entries(categories)) {
@@ -296,10 +134,10 @@ OT
                 section.innerHTML = `<div class="category-title">${catName}</div>`;
                 const grid = document.createElement('div');
                 grid.className = 'theme-grid';
-                for (const [themeName, words] of Object.entries(themes)) {
+                for (const themeName of Object.keys(themes)) {
                     const btn = document.createElement('button');
                     btn.innerText = themeName;
-                    btn.onclick = () => prepareGame(words);
+                    btn.onclick = () => preStart(themes[themeName]);
                     grid.appendChild(btn);
                 }
                 section.appendChild(grid);
@@ -307,160 +145,105 @@ OT
             }
         }
 
-        function startCustomGame() {
-            const raw = document.getElementById('custom-input').value;
-            const words = raw.split(/[\n,，]+/).map(w => w.trim()).filter(w => w.length > 0);
-            if (words.length < 2) { alert("請至少輸入 2 個詞語！"); return; }
-            prepareGame(words);
-        }
-
-        async function prepareGame(wordsList) {
+        async function preStart(words) {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-                try {
-                    const permission = await DeviceOrientationEvent.requestPermission();
-                    if (permission !== 'granted') return alert("需開啟動作權限！");
-                } catch (e) {}
+                try { await DeviceOrientationEvent.requestPermission(); } catch (e) {}
             }
-            currentWords = [...wordsList].sort(() => 0.5 - Math.random());
+            currentWords = [...words].sort(() => 0.5 - Math.random());
             startGame();
         }
 
         function startGame() {
-            score = 0;
-            timeLeft = initialTime;
-            gameResults = []; 
-            scoreDisplay.innerText = score;
-            timerDisplay.innerText = timeLeft;
-            isGameActive = true;
-            canTilt = true;
-
-            homeScreen.classList.remove('active');
-            resultScreen.classList.remove('active');
-            gameScreen.classList.add('active');
-            gameScreen.className = "screen active";
-
+            score = 0; timeLeft = 60; gameResults = [];
+            isGameActive = true; canTilt = true;
+            document.getElementById('home-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            document.getElementById('score').innerText = 0;
             nextWord();
-
             timerInterval = setInterval(() => {
                 timeLeft--;
-                timerDisplay.innerText = timeLeft;
+                document.getElementById('timer').innerText = timeLeft;
                 if (timeLeft <= 0) endGame();
             }, 1000);
-
-            window.addEventListener('deviceorientation', handleOrientation);
+            window.addEventListener('deviceorientation', handleTilt);
         }
 
         function nextWord() {
-            if (currentWords.length === 0) {
-                endGame();
-                return;
-            }
-            const word = currentWords.pop();
-            // Font sizing logic
-            if(word.length > 10) wordDisplay.style.fontSize = "10vw";
-            else if(word.length > 6) wordDisplay.style.fontSize = "14vw";
-            else wordDisplay.style.fontSize = "22vw";
+            if (currentWords.length === 0) return endGame();
+            const w = currentWords.pop();
+            const display = document.getElementById('word-display');
+            display.innerText = w;
+            display.dataset.current = w;
             
-            wordDisplay.innerText = word;
-            wordDisplay.dataset.current = word; 
+            // 自動調整字體
+            if(w.length > 10) display.style.fontSize = "8vw";
+            else if(w.length > 6) display.style.fontSize = "12vw";
+            else display.style.fontSize = "18vw";
             
-            gameScreen.className = "screen active";
+            document.getElementById('game-screen').className = "screen active";
             canTilt = true;
         }
 
         function handleAnswer(type) {
             if (!isGameActive || !canTilt) return;
             canTilt = false;
-            
-            const currentWord = wordDisplay.dataset.current;
-
+            const w = document.getElementById('word-display').dataset.current;
             if (type === 'correct') {
                 score++;
-                scoreDisplay.innerText = score;
-                gameScreen.classList.add('bg-correct');
-                wordDisplay.innerText = "⭕";
-                gameResults.push({ word: currentWord, status: 'correct' });
+                document.getElementById('score').innerText = score;
+                document.getElementById('game-screen').classList.add('bg-correct');
+                gameResults.push({w: w, s: '✅'});
             } else {
-                gameScreen.classList.add('bg-skip');
-                wordDisplay.innerText = "❌";
-                gameResults.push({ word: currentWord, status: 'skip' });
+                document.getElementById('game-screen').classList.add('bg-skip');
+                gameResults.push({w: w, s: '❌'});
             }
+            setTimeout(() => { if (!canTilt) { canTilt = true; nextWord(); } }, 600);
         }
 
-        function handleOrientation(e) {
+        function handleTilt(e) {
             if (!isGameActive) return;
             const beta = e.beta;
-            if (!canTilt && beta > 60 && beta < 120) {
-                canTilt = true;
-                nextWord();
-                return;
-            }
+            // 角度重置鎖定
+            if (!canTilt && beta > 60 && beta < 120) { canTilt = true; nextWord(); return; }
             if (canTilt) {
                 if (beta > 135) handleAnswer('correct');
                 else if (beta < 35) handleAnswer('skip');
             }
         }
 
-        // Touch Fallback
-        gameScreen.addEventListener('click', (e) => {
+        // 點擊後備 (支援沒陀螺儀的情況)
+        document.getElementById('game-screen').addEventListener('click', (e) => {
             if (!isGameActive) return;
-            if (e.clientY < window.innerHeight / 2) {
-                if(canTilt) handleAnswer('skip');
-            } else {
-                if(canTilt) handleAnswer('correct');
-            }
-            setTimeout(() => { if(!canTilt) { canTilt=true; nextWord(); } }, 600);
+            if (e.clientY < window.innerHeight / 2) handleAnswer('skip');
+            else handleAnswer('correct');
         });
 
         function endGame() {
             isGameActive = false;
             clearInterval(timerInterval);
-            window.removeEventListener('deviceorientation', handleOrientation);
-
+            window.removeEventListener('deviceorientation', handleTilt);
             document.getElementById('final-score').innerText = score;
-            resultList.innerHTML = '';
-            
-            gameResults.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'result-item';
-                div.innerHTML = `
-                    <span class="res-word">${item.word}</span>
-                    <span class="res-icon ${item.status === 'correct' ? 'res-correct' : 'res-skip'}">
-                        ${item.status === 'correct' ? '✅' : '❌'}
-                    </span>
-                `;
-                resultList.appendChild(div);
+            const list = document.getElementById('result-list');
+            list.innerHTML = '';
+            gameResults.forEach(r => {
+                list.innerHTML += `<div class="result-item"><span>${r.w}</span><span style="color:${r.s==='✅'?'#27ae60':'#c0392b'}">${r.s}</span></div>`;
             });
-
-            // --- 殘酷評分系統 (3層) ---
-            let title = "";
             
-            // 1. 神級 (15分或以上) - 慶祝
-            if (score >= 15) {
-                title = "👑 派對之神";
-                confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
-            } 
-            // 2. 普通人 (5分 至 14分) - 冷淡
-            else if (score >= 5) {
-                title = "😐 普通市民";
-            } 
-            // 3. 廢柴 (0分 至 4分) - 負面/無情緒價值
-            else {
-                title = "🤡 氣氛破壞者"; // 夠 Mean
-            }
-            
-            rankTitle.innerText = title;
+            const title = document.getElementById('rank-title');
+            if (score >= 9) { title.innerText = "👑 派對之神"; confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); }
+            else if (score >= 2) title.innerText = "😐 普通市民";
+            else title.innerText = "🤡 氣氛破壞者";
 
-            gameScreen.classList.remove('active');
-            resultScreen.classList.add('active');
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('result-screen').classList.add('active');
         }
 
         function goHome() {
-            resultScreen.classList.remove('active');
-            homeScreen.classList.add('active');
+            document.getElementById('result-screen').classList.remove('active');
+            document.getElementById('home-screen').classList.add('active');
         }
 
-        initMenu();
+        init();
     </script>
 </body>
 </html>
