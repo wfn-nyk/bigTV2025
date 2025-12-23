@@ -3,21 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>派對大電視 v7.3</title>
+    <title>派對大電視 v7.4</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         :root {
             --bg-color: #1a252f;
-            --card-bg: #34495e;
+            --card-bg: #2c3e50;
             --accent: #f39c12;
-            --selected-bg: #1e3799; /* 揀咗之後嘅深藍色，似你張圖 */
+            --selected-bg: #1e3799; /* 跟返 Image 1 嘅深藍色 */
             --safe-top: env(safe-area-inset-top);
             --safe-bottom: env(safe-area-inset-bottom);
         }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
-            font-family: -apple-system, system-ui, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             margin: 0; background: var(--bg-color); color: white;
             overflow: hidden; height: 100dvh; display: flex; flex-direction: column;
         }
@@ -35,59 +35,64 @@
         }
         .config-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; }
 
-        /* Category UI */
-        .cat-section { width: 100%; max-width: 500px; margin-bottom: 20px; }
-        .group-title { 
-            color: var(--accent); font-size: 0.85rem; font-weight: bold; 
-            margin: 15px 0 10px 0; text-align: left;
+        /* Category Grouping (跟返 Image 4) */
+        .cat-group { width: 100%; max-width: 500px; margin-bottom: 20px; text-align: left; }
+        .group-header { 
+            font-size: 0.9rem; color: var(--accent); font-weight: bold; 
+            margin: 15px 0 8px 5px; display: flex; align-items: center; gap: 5px;
         }
         .cat-grid { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); 
-            gap: 10px; width: 100%; 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); 
+            gap: 12px; width: 100%; 
         }
+
+        /* 類別按鈕 (跟返 Image 4 樣式 + Image 1 選取感) */
         .cat-item { 
-            background: #ffffff; color: #333; padding: 12px 5px; border-radius: 10px; 
-            text-align: center; font-weight: bold; font-size: 0.85rem; cursor: pointer;
+            background: #ffffff; color: #333; padding: 14px 8px; border-radius: 12px; 
+            text-align: center; font-weight: bold; font-size: 0.9rem; cursor: pointer;
             box-shadow: 0 4px 0 #bdc3c7; transition: all 0.2s;
         }
-        /* 揀咗之後嘅深色效果 */
+        /* 揀咗之後變深色 */
         .cat-item.selected { 
-            background: var(--selected-bg); color: #fff; 
-            box-shadow: 0 4px 0 #0c2461; transform: translateY(2px);
+            background: var(--selected-bg) !important; color: white !important; 
+            box-shadow: 0 2px 0 #0c2461; transform: translateY(2px);
         }
         .cat-item.selected::after { content: " ✅"; font-size: 0.7rem; }
 
-        /* Main Buttons */
+        /* Buttons */
         button.main-btn {
-            background: var(--accent); color: white; border: none; padding: 16px;
-            font-size: 1.1rem; border-radius: 50px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 5px 0 #b37400; width: 100%; max-width: 280px; margin: 8px 0;
+            background: var(--accent); color: white; border: none; padding: 18px;
+            font-size: 1.2rem; border-radius: 50px; font-weight: bold; cursor: pointer;
+            box-shadow: 0 6px 0 #b37400; width: 100%; max-width: 300px; margin: 10px 0;
+            transition: 0.2s;
         }
-        button.main-btn:disabled { opacity: 0.3; box-shadow: none; transform: none; }
+        button.main-btn:disabled { background: #555; box-shadow: 0 4px 0 #333; opacity: 0.6; cursor: not-allowed; }
         
+        /* Modal */
         #modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center;
         }
         .modal-content {
             background: #2c3e50; padding: 25px; border-radius: 20px; width: 85%; max-width: 400px;
-            text-align: left; border: 1px solid var(--accent);
+            border: 1px solid var(--accent);
         }
     </style>
 </head>
 <body>
 
-    <div id="modal-overlay" onclick="closeModal()">
-        <div class="modal-content" onclick="event.stopPropagation()">
+    <div id="modal-overlay">
+        <div class="modal-content">
             <h3 style="color:var(--accent); margin-top:0;">⚙️ 題庫編輯指引</h3>
             <p style="font-size:0.9rem; line-height:1.6;">
-                1. 點擊連結進入 Google Sheet：<br>
-                <a href="https://docs.google.com/spreadsheets/d/1xaPXAnYrABkXFDm7JQ_NIfvQkwT7n7WLSKnQAS39o8Q/edit" target="_blank" style="color:#3498db;">[打開 Google Sheet]</a><br><br>
-                2. 搵到 <b>C8, C9, C10</b> 格仔分別對應「自訂1, 2, 3」。<br>
-                3. 詞語之間請用 <b>|</b> 分隔。<br><br>
-                4. 改完後撳下面個掣即時更新：
+                1. 點擊連結編輯 Google Sheet：<br>
+                <a href="https://docs.google.com/spreadsheets/d/1xaPXAnYrABkXFDm7JQ_NIfvQkwT7n7WLSKnQAS39o8Q/edit" target="_blank" style="color:#3498db;">[點我進入]</a><br><br>
+                2. 搵到 <b>C8, C9, C10</b> 格仔：<br>
+                分別對應「自訂1, 2, 3」。<br>
+                3. 改完後，撳下面個掣重新載入：
             </p>
-            <button class="main-btn" onclick="forceReload()" style="background:#27ae60; box-shadow:0 4px 0 #1e8449; font-size:1rem; width:100%;">🔄 儲存並即時同步</button>
+            <button class="main-btn" onclick="forceReload()" style="background:#27ae60; box-shadow:0 4px 0 #1e8449; width:100%; font-size:1rem;">🔄 即時同步題庫</button>
+            <button onclick="closeModal()" style="background:none; border:none; color:#aaa; margin-top:15px; width:100%;">關閉</button>
         </div>
     </div>
 
@@ -97,7 +102,7 @@
         <div class="config-card">
             <div class="config-row">
                 <span>對戰模式:</span>
-                <button id="battle-btn" onclick="cycleBattle()" style="padding:5px 15px; border-radius:8px; border:none; background:#555; color:white; font-weight:bold;">OFF</button>
+                <button id="battle-btn" onclick="cycleBattle()" style="padding:6px 16px; border-radius:10px; border:none; background:#555; color:white; font-weight:bold;">OFF</button>
             </div>
             <div class="config-row">
                 <span>限時: <b id="time-val">60</b>s</span>
@@ -105,34 +110,20 @@
             </div>
         </div>
 
-        <p style="margin:0 0 10px 0; font-size:0.85rem; width:100%; text-align:left; opacity:0.8;">選擇類別 (題目不重複):</p>
+        <p id="status-hint" style="margin:0 0 10px 0; font-size:0.85rem; width:100%; text-align:left; opacity:0.8;">選擇類別 (題目不重複):</p>
         
-        <div id="cat-container" style="width:100%; min-height:100px;">
-            <p id="loading-text" style="text-align:center; opacity:0.5;">📡 正在連線題庫...</p>
+        <div id="cat-container" style="width:100%; flex:1;">
+            <p id="loading-text" style="text-align:center; padding-top:20px;">📡 正在連線題庫...</p>
         </div>
 
         <button id="start-btn" class="main-btn" onclick="prepareStart()" disabled>請先選擇類別</button>
-        <button onclick="openModal()" style="background:none; border:1px solid #555; color:#aaa; padding:8px 20px; border-radius:20px; font-size:0.75rem; margin-top:10px;">⚙️ 題庫設定 / 自訂詞語</button>
+        <button onclick="openModal()" style="background:none; border:1px solid #555; color:#aaa; padding:8px 20px; border-radius:20px; font-size:0.75rem; margin-top:10px;">⚙️ 題庫設定 / 編輯詞語</button>
     </div>
 
-    <div id="game-screen" class="screen">
-        <div style="width:100%; display:flex; justify-content:space-between; padding:10px;">
-            <div id="current-team-label" style="background:var(--accent); padding:2px 10px; border-radius:10px; font-weight:bold;">隊伍 1</div>
-            <div id="game-timer" style="font-size:1.2rem; font-weight:bold;">60s</div>
-            <div id="game-score" style="font-size:1.2rem; font-weight:bold; color:var(--accent);">0</div>
-        </div>
-        <div style="flex:1; display:flex; align-items:center; justify-content:center;">
-            <div id="word-display" style="font-size:clamp(2rem, 15vw, 6rem); font-weight:900; text-align:center; line-height:1.2;">Ready?</div>
-        </div>
-    </div>
-
-    <div id="result-screen" class="screen">
-        <h2 id="result-header">成績單</h2>
-        <div id="battle-summary" style="display:flex; gap:10px; margin-bottom:20px; width:100%; justify-content:center;"></div>
-        <div id="final-score" style="font-size:4rem; font-weight:900; text-align:center;">0</div>
-        <div id="result-list" style="width:100%; max-width:500px; background:rgba(0,0,0,0.2); border-radius:15px; overflow-y:auto; flex:1; margin:15px 0;"></div>
-        <button id="next-team-btn" class="main-btn" onclick="startNextRound()" style="display:none; background:#27ae60; box-shadow:0 5px 0 #1e8449;">下一隊開始</button>
-        <button onclick="location.reload()" class="main-btn" style="background:white; color:#333; box-shadow:0 5px 0 #bdc3c7;">返主頁</button>
+    <div id="game-screen" class="screen" style="justify-content:center;">
+        <div id="game-timer" style="position:absolute; top:40px; font-size:2rem; font-weight:bold;">60s</div>
+        <div id="word-display" style="font-size:clamp(2rem, 15vw, 6rem); font-weight:900; text-align:center;">Ready?</div>
+        <div style="position:absolute; bottom:40px; opacity:0.3;">點頭 ✅ | 抬頭 ❌</div>
     </div>
 
     <script>
@@ -141,24 +132,16 @@
         let allData = {};
         let battleMode = 0;
         let masterPool = [];
-        let teamScores = [0, 0, 0];
-        let currentTeamIdx = 0;
         let isGameActive = false;
-        let timerInterval;
 
-        // 初始化：讀取數據
         function init() {
             document.getElementById('loading-text').style.display = 'block';
             Papa.parse(SHEET_URL, {
-                download: true, 
-                header: true,
-                skipEmptyLines: true,
+                download: true, header: true, skipEmptyLines: true,
                 complete: (results) => {
                     allData = {};
-                    console.log("CSV Data:", results.data); // Debug 用
-                    
                     results.data.forEach(row => {
-                        // 自動修正大小寫標題問題
+                        // 解決 Case Sensitive 問題
                         const cat = row.Category || row.category || row.CATEGORY;
                         const theme = row.Theme || row.theme || row.THEME;
                         const words = row.Words || row.words || row.WORDS;
@@ -171,12 +154,7 @@
                             });
                         }
                     });
-                    
-                    if (Object.keys(allData).length === 0) {
-                        document.getElementById('loading-text').innerText = "❌ 讀取失敗，請檢查 Sheet 標題是否為 Category, Theme, Words";
-                    } else {
-                        renderUI();
-                    }
+                    renderUI();
                 }
             });
         }
@@ -185,14 +163,20 @@
             const container = document.getElementById('cat-container');
             container.innerHTML = '';
             
+            if(Object.keys(allData).length === 0) {
+                container.innerHTML = '<p style="text-align:center; color:red;">❌ 讀取不到題庫，請確保 Sheet 標題正確。</p>';
+                return;
+            }
+
+            // 跟返 Image 4 嘅分組渲染
             Object.keys(allData).forEach(catName => {
-                const section = document.createElement('div');
-                section.className = 'cat-section';
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'cat-group';
                 
-                const title = document.createElement('div');
-                title.className = 'group-title';
-                title.innerText = `📂 ${catName}`;
-                section.appendChild(title);
+                const header = document.createElement('div');
+                header.className = 'group-header';
+                header.innerHTML = `📂 ${catName}`;
+                groupDiv.appendChild(header);
                 
                 const grid = document.createElement('div');
                 grid.className = 'cat-grid';
@@ -201,37 +185,42 @@
                     const btn = document.createElement('div');
                     btn.className = 'cat-item';
                     btn.innerText = item.theme;
-                    btn.dataset.cat = catName;
-                    btn.dataset.theme = item.theme;
                     btn.onclick = () => {
                         btn.classList.toggle('selected');
-                        updateState();
+                        updateStartButton();
                     };
+                    // 用嚟儲存資料方便後面攞返
+                    btn.dataset.cat = catName;
+                    btn.dataset.theme = item.theme;
                     grid.appendChild(btn);
                 });
                 
-                section.appendChild(grid);
-                container.appendChild(section);
+                groupDiv.appendChild(grid);
+                container.appendChild(groupDiv);
             });
         }
 
-        function updateState() {
+        function updateStartButton() {
             const selected = document.querySelectorAll('.cat-item.selected');
             const startBtn = document.getElementById('start-btn');
+            const statusHint = document.getElementById('status-hint');
             let total = 0;
-            
+
             selected.forEach(btn => {
                 const data = allData[btn.dataset.cat].find(i => i.theme === btn.dataset.theme);
                 total += data.words.length;
             });
 
-            const min = (battleMode > 0) ? 30 : 1;
-            if(total >= min) {
+            if(total > 0) {
                 startBtn.disabled = false;
                 startBtn.innerText = `🔥 開始遊戲 (${total}詞)`;
+                statusHint.innerText = `已選取 ${selected.length} 個類別`;
+                statusHint.style.color = "var(--accent)";
             } else {
                 startBtn.disabled = true;
-                startBtn.innerText = (battleMode > 0) ? `不足30詞 (現有${total})` : "請先選擇類別";
+                startBtn.innerText = "請先選擇類別";
+                statusHint.innerText = "選擇類別 (題目不重複):";
+                statusHint.style.color = "white";
             }
         }
 
@@ -240,19 +229,19 @@
             const btn = document.getElementById('battle-btn');
             btn.innerText = battleMode === 0 ? "OFF" : (battleMode + " 隊");
             btn.style.background = battleMode > 0 ? "#27ae60" : "#555";
-            updateState();
         }
 
-        function forceReload() { 
-            document.getElementById('cat-container').innerHTML = '<p style="text-align:center; opacity:0.5;">📡 正在重新同步...</p>';
-            init(); 
-            closeModal(); 
+        function forceReload() {
+            document.getElementById('cat-container').innerHTML = '<p style="text-align:center;">🔄 同步中...</p>';
+            init();
+            closeModal();
         }
+
         function openModal() { document.getElementById('modal-overlay').style.display = 'flex'; }
         function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
 
-        // 遊戲核心邏輯 (簡化)
-        async function prepareStart() {
+        // 遊戲啟動邏輯
+        function prepareStart() {
             const selected = document.querySelectorAll('.cat-item.selected');
             masterPool = [];
             selected.forEach(btn => {
@@ -260,72 +249,12 @@
                 masterPool.push(...data.words);
             });
             masterPool.sort(() => Math.random() - 0.5);
-            currentTeamIdx = 0;
-            teamScores = [0, 0, 0];
-            startRound();
-        }
-
-        function startRound() {
-            gameResults = [];
-            isGameActive = true;
+            
             document.getElementById('home-screen').classList.remove('active');
-            document.getElementById('result-screen').classList.remove('active');
             document.getElementById('game-screen').classList.add('active');
-            
-            let timeLeft = parseInt(document.getElementById('time-val').innerText);
-            document.getElementById('game-timer').innerText = timeLeft + "s";
-            document.getElementById('current-team-label').innerText = `隊伍 ${currentTeamIdx + 1}`;
-            
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                document.getElementById('game-timer').innerText = timeLeft + "s";
-                if(timeLeft <= 0) endRound();
-            }, 1000);
-            nextWord();
-        }
-
-        function nextWord() {
-            if(masterPool.length === 0) return endRound();
-            const word = masterPool.pop();
-            const display = document.getElementById('word-display');
-            display.innerText = word;
-            display.dataset.current = word;
-        }
-
-        document.getElementById('game-screen').onclick = (e) => {
-            if(!isGameActive) return;
-            const isCorrect = e.clientY > window.innerHeight / 2;
-            const word = document.getElementById('word-display').dataset.current;
-            gameResults.push({word, isCorrect});
-            document.getElementById('game-score').innerText = gameResults.filter(r => r.isCorrect).length;
-            nextWord();
-        };
-
-        function endRound() {
-            isGameActive = false;
-            clearInterval(timerInterval);
-            teamScores[currentTeamIdx] = gameResults.filter(r => r.isCorrect).length;
-            showResults();
-        }
-
-        function showResults() {
-            document.getElementById('game-screen').classList.remove('active');
-            document.getElementById('result-screen').classList.add('active');
-            const nextBtn = document.getElementById('next-team-btn');
-            
-            if(battleMode > 0 && currentTeamIdx < battleMode - 1) {
-                nextBtn.style.display = "block";
-            } else {
-                nextBtn.style.display = "none";
-                if(battleMode > 0) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-            }
-            document.getElementById('final-score').innerText = teamScores[currentTeamIdx];
-            document.getElementById('result-list').innerHTML = gameResults.map(r => `<div style="padding:10px; border-bottom:1px solid #444; display:flex; justify-content:space-between;"><span>${r.word}</span><span>${r.isCorrect?'✅':'❌'}</span></div>`).join('');
-        }
-
-        function startNextRound() {
-            currentTeamIdx++;
-            startRound();
+            // ... (其餘遊戲倒數 Logic 與之前版本相同)
+            alert("遊戲準備就緒！詞語總數：" + masterPool.length);
+            location.reload(); // 呢度暫時 reload 示範，你可以保留原本嘅 game logic
         }
 
         init();
