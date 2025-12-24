@@ -3,229 +3,349 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>派對大電視 v7.5</title>
+    <title>派對大電視 v7.9</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
         :root {
-            --bg-color: #1a252f;
-            --card-bg: #2c3e50;
-            --accent: #f39c12;
-            --selected-bg: #2b30b4; /* 深藍紫色，跟返 Image 1 */
-            --safe-top: env(safe-area-inset-top);
-            --safe-bottom: env(safe-area-inset-bottom);
+            --bg-color: #1a252f; --card-bg: #2c3e50; --accent: #f39c12;
+            --success: #27ae60; --fail: #c0392b; --selected-bg: #1e3799; 
+            --safe-top: env(safe-area-inset-top); --safe-bottom: env(safe-area-inset-bottom);
         }
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
         body {
-            font-family: -apple-system, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             margin: 0; background: var(--bg-color); color: white;
             overflow: hidden; height: 100dvh; display: flex; flex-direction: column;
         }
-        .screen { 
-            display: none; flex-direction: column; align-items: center; 
-            height: 100%; width: 100%; overflow-y: auto; 
-            padding: calc(15px + var(--safe-top)) 20px calc(20px + var(--safe-bottom)) 20px;
-        }
+        .screen { display: none; flex-direction: column; align-items: center; height: 100%; width: 100%; overflow-y: auto; padding: calc(15px + var(--safe-top)) 20px calc(20px + var(--safe-bottom)) 20px; }
         .screen.active { display: flex; }
 
-        /* Category Design */
+        /* --- UI: Header & Groups --- */
+        .config-card { background: var(--card-bg); width: 100%; max-width: 500px; border-radius: 15px; padding: 12px; margin-bottom: 12px; }
+        .config-row { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; }
         .cat-group { width: 100%; max-width: 500px; margin-bottom: 15px; text-align: left; }
-        .group-header { font-size: 0.85rem; color: var(--accent); font-weight: bold; margin-bottom: 8px; opacity: 0.9; }
+        .group-header { font-size: 0.85rem; color: var(--accent); font-weight: bold; margin: 8px 0 6px 5px; }
         .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
-        
-        /* 撳掣樣式 */
-        .cat-item { 
-            background: #ffffff; color: #333; padding: 12px 5px; border-radius: 12px; 
-            text-align: center; font-weight: bold; font-size: 0.85rem; cursor: pointer;
-            box-shadow: 0 4px 0 #bdc3c7; transition: 0.1s;
-        }
-        /* 揀咗之後嘅深色效果 */
-        .cat-item.selected { 
-            background: var(--selected-bg) !important; color: white !important; 
-            box-shadow: 0 2px 0 #1a1e80; transform: translateY(2px);
-        }
+        .cat-item { background: #ffffff; color: #333; padding: 12px 5px; border-radius: 12px; text-align: center; font-weight: bold; font-size: 0.85rem; cursor: pointer; box-shadow: 0 4px 0 #bdc3c7; transition: 0.1s; }
+        .cat-item.selected { background: var(--selected-bg) !important; color: white !important; box-shadow: 0 4px 0 #0c2461; transform: translateY(2px); }
         .cat-item.selected::after { content: " ✅"; font-size: 0.7rem; }
 
-        /* Main Start Button */
-        button.main-btn {
-            background: var(--accent); color: white; border: none; padding: 18px;
-            font-size: 1.1rem; border-radius: 50px; font-weight: bold; cursor: pointer;
-            box-shadow: 0 6px 0 #b37400; width: 100%; max-width: 280px; margin: 15px 0;
-        }
-        button.main-btn:disabled { background: #444; box-shadow: 0 4px 0 #222; opacity: 0.5; }
+        /* --- UI: Results --- */
+        #rank-title { font-size: 1.5rem; color: var(--accent); font-weight: bold; margin-bottom: 5px; letter-spacing: 2px; }
+        .result-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
 
-        /* Loading Spinner */
-        #loader { margin: 30px; border: 4px solid #f3f3f3; border-top: 4px solid var(--accent); border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* --- Buttons --- */
+        button.main-btn { background: var(--accent); color: white; border: none; padding: 16px; font-size: 1.1rem; border-radius: 50px; font-weight: bold; box-shadow: 0 6px 0 #b37400; width: 100%; max-width: 300px; margin-top: 10px; }
+        button.main-btn:disabled { opacity: 0.4; box-shadow: none; }
+        .toggle-btn { background: #555; border: none; color: white; padding: 4px 12px; border-radius: 8px; font-weight: bold; }
+
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-content { background: #2c3e50; padding: 25px; border-radius: 20px; width: 85%; max-width: 400px; border: 2px solid var(--accent); }
     </style>
 </head>
 <body>
 
+    <div id="modal-overlay" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3 style="color:var(--accent); margin-top:0;">⚙️ 題庫編輯指引</h3>
+            <p style="font-size:0.9rem; line-height:1.6; color:#ecf0f1;">
+                1. 編輯 Google Sheet 詞語：<br>
+                <a href="https://docs.google.com/spreadsheets/d/1xaPXAnYrABkXFDm7JQ_NIfvQkwT7n7WLSKnQAS39o8Q/edit" target="_blank" style="color:#3498db; font-weight:bold;">[開啟 Google Sheet]</a><br>
+                2. 詞語存放在 Column C (以 | 分隔)。<br>
+                3. 改完後，撳下面個掣即時同步：
+            </p>
+            <button class="main-btn" onclick="forceSync()" style="background:var(--success); box-shadow:0 4px 0 #1e8449; width:100%;">🔄 即時同步題庫資料</button>
+            <button onclick="closeModal()" style="background:none; border:none; color:#aaa; width:100%; margin-top:15px;">關閉視窗</button>
+        </div>
+    </div>
+
     <div id="home-screen" class="screen active">
-        <h2 style="margin:0 0 10px 0;">📺 派對大電視 LIVE</h2>
+        <h2 style="margin:0 0 10px 0;">📺 派對大電視 v7.9</h2>
         
-        <div style="background:var(--card-bg); width:100%; max-width:500px; border-radius:15px; padding:12px; margin-bottom:15px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div class="config-card">
+            <div class="config-row">
+                <span>對戰模式:</span>
+                <button id="battle-btn" class="toggle-btn" onclick="cycleBattle()">OFF</button>
+            </div>
+            <div class="config-row">
+                <span>遊戲音效:</span>
+                <button id="sound-btn" class="toggle-btn" onclick="toggleSound()">ON</button>
+            </div>
+            <div class="config-row">
                 <span>限時: <b id="time-val">60</b>s</span>
-                <input type="range" min="30" max="180" step="10" value="60" oninput="document.getElementById('time-val').innerText=this.value" style="width:60%; accent-color:var(--accent);">
+                <input type="range" min="30" max="180" step="10" value="60" oninput="document.getElementById('time-val').innerText=this.value" style="width:50%; accent-color:var(--accent);">
             </div>
         </div>
 
-        <p style="margin:0 0 10px 0; font-size:0.8rem; width:100%; text-align:left; opacity:0.7;">請選擇主題 (可多選):</p>
-        
-        <div id="loader"></div>
+        <p style="margin:0 0 5px 0; font-size:0.8rem; width:100%; text-align:left; opacity:0.7;">請選擇類別 (支持多選):</p>
         <div id="cat-container" style="width:100%; flex:1;"></div>
 
-        <button id="start-btn" class="main-btn" onclick="startGame()" disabled>請先選擇類別</button>
-        <p style="font-size:0.7rem; opacity:0.4;">v7.5 穩定版 | 詞語取自 Column C</p>
+        <button id="start-btn" class="main-btn" onclick="requestPermission()" disabled>請先選擇類別</button>
+        <button onclick="openModal()" style="background:none; border:1px solid #555; color:#aaa; padding:8px 20px; border-radius:20px; font-size:0.7rem; margin:10px 0;">⚙️ 編輯詞語 / 設定</button>
     </div>
 
-    <div id="game-screen" class="screen" style="justify-content:center;">
-        <div id="timer-display" style="position:absolute; top:30px; font-size:2rem; font-weight:bold;">60s</div>
-        <div id="word-display" style="font-size:clamp(2rem, 15vw, 6rem); font-weight:900; text-align:center;">Ready?</div>
+    <div id="game-screen" class="screen">
+        <div style="width:100%; display:flex; justify-content:space-between; align-items:center;">
+            <button onclick="exitGame()" style="font-size:1.5rem; background:none; border:none; color:white;">❌</button>
+            <div id="team-label" style="background:var(--accent); padding:2px 12px; border-radius:10px; font-weight:bold; display:none;">隊伍 1</div>
+            <div id="game-timer" style="font-size:1.5rem; font-weight:bold; font-variant-numeric: tabular-nums;">60s</div>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; width:100%;">
+            <div id="word-cat-hint" style="color:var(--accent); font-weight:bold; margin-bottom:10px;">主題</div>
+            <div id="word-display" style="font-size:clamp(2.5rem, 15vw, 6rem); font-weight:900; text-align:center;">READY</div>
+        </div>
+        <div style="width:100%; display:flex; gap:10px; padding-bottom:10px;">
+            <button onclick="handleAnswer(false)" style="flex:1; padding:20px; border-radius:15px; border:none; background:var(--fail); color:white; font-weight:bold;">PASS</button>
+            <button onclick="handleAnswer(true)" style="flex:1; padding:20px; border-radius:15px; border:none; background:var(--success); color:white; font-weight:bold;">正確</button>
+        </div>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <div id="rank-title">稱號載入中...</div>
+        <div id="final-score" style="font-size:4.5rem; font-weight:900; color:var(--accent); line-height:1;">0</div>
+        <div style="margin:5px 0 15px 0; font-size:0.8rem; opacity:0.5;">點擊題目可手動改分</div>
+        <div id="result-list-container" style="width:100%; max-width:500px; background:rgba(0,0,0,0.2); border-radius:15px; flex:1; overflow-y:auto; padding:5px;"></div>
+        <button id="next-team-btn" class="main-btn" onclick="nextRound()" style="display:none; background:var(--success);">下一隊開始</button>
+        <button onclick="resetGame()" class="main-btn" style="background:white; color:#333; box-shadow:0 6px 0 #bdc3c7;">返回主頁</button>
     </div>
 
     <script>
-        // 你的 Google Sheet CSV 連結
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/1xaPXAnYrABkXFDm7JQ_NIfvQkwT7n7WLSKnQAS39o8Q/export?format=csv&gid=0';
+        
+        let allData = {};
+        let battleMode = 0;
+        let isSoundOn = true;
+        let currentTeamIdx = 0;
+        let teamScores = [0, 0, 0];
+        let gamePool = [];
+        let currentWordIdx = 0;
+        let gameResults = [];
+        let timer = null;
+        let isGameActive = false;
+        let lastActionTime = 0;
 
-        let sheetData = {};
-        let selectedPool = [];
+        // --- 核心邏輯：稱號等級 ---
+        function updateRank(score, total) {
+            const pct = total > 0 ? (score / total) * 100 : 0;
+            let title = "氣氛破壞者";
 
-        // 1. 抓取資料 (最佳化讀取)
-        async function loadSheet() {
-            try {
-                const response = await fetch(CSV_URL, { cache: "no-cache" });
-                const csvText = await response.text();
-                
-                Papa.parse(csvText, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: (results) => {
-                        processData(results.data);
-                        document.getElementById('loader').style.display = 'none';
-                    }
-                });
-            } catch (err) {
-                alert("讀取失敗，請檢查網路！");
+            if (isSoundOn) {
+                if (pct >= 85) title = "派對之神";
+                else if (pct >= 40) title = "普通市民";
+            } else {
+                if (pct >= 70) title = "派對之神";
+                else if (pct >= 30) title = "普通市民";
+            }
+            
+            document.getElementById('rank-title').innerText = title;
+            
+            // 如果攞到「神」級，爆發慶祝
+            if (title.includes("神") && !isGameActive) {
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             }
         }
 
-        // 2. 處理資料 (跟返你張 Sheet 標題: Category, Theme, Words)
-        function processData(data) {
-            sheetData = {};
-            data.forEach(row => {
-                const cat = row.Category || "其他";
-                const theme = row.Theme || "未命名";
-                const wordsStr = row.Words || "";
-                
-                if (!sheetData[cat]) sheetData[cat] = [];
-                // 將 Column C 的詞語拆開
-                const wordList = wordsStr.split(/[|，,]+/).map(w => w.trim()).filter(w => w.length > 0);
-                
-                sheetData[cat].push({ theme, wordList });
-            });
-            renderCategories();
+        // --- UI 操作 ---
+        function toggleSound() {
+            isSoundOn = !isSoundOn;
+            document.getElementById('sound-btn').innerText = isSoundOn ? "ON" : "OFF";
         }
 
-        // 3. 渲染 UI (分組 Tab)
-        function renderCategories() {
+        function openModal() { document.getElementById('modal-overlay').style.display = 'flex'; }
+        function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+        function forceSync() { loadData(); closeModal(); }
+
+        // --- 讀取數據 ---
+        async function loadData() {
+            try {
+                const res = await fetch(CSV_URL + '?t=' + Date.now());
+                const text = await res.text();
+                Papa.parse(text, {
+                    header: true, skipEmptyLines: true,
+                    complete: (results) => {
+                        allData = {};
+                        results.data.forEach(row => {
+                            const cat = row.Category || "其他";
+                            const theme = row.Theme || "主題";
+                            const words = row.Words ? row.Words.split(/[|，,]+/).map(s=>s.trim()).filter(s=>s) : [];
+                            if(!allData[cat]) allData[cat] = [];
+                            allData[cat].push({ theme, words });
+                        });
+                        renderUI();
+                    }
+                });
+            } catch (e) { console.error("Data Load Error"); }
+        }
+
+        function renderUI() {
             const container = document.getElementById('cat-container');
             container.innerHTML = '';
-
-            Object.keys(sheetData).forEach(catName => {
+            Object.keys(allData).forEach(cat => {
                 const group = document.createElement('div');
                 group.className = 'cat-group';
-                group.innerHTML = `<div class="group-header">${catName}</div>`;
-                
+                group.innerHTML = `<div class="group-header">📂 ${cat}</div>`;
                 const grid = document.createElement('div');
                 grid.className = 'cat-grid';
-
-                sheetData[catName].forEach(item => {
+                allData[cat].forEach(item => {
                     const btn = document.createElement('div');
                     btn.className = 'cat-item';
                     btn.innerText = item.theme;
-                    btn.onclick = () => {
-                        btn.classList.toggle('selected');
-                        updateStartButton();
-                    };
-                    btn.dataset.words = JSON.stringify(item.wordList);
+                    btn.onclick = () => { btn.classList.toggle('selected'); updateStartBtn(); };
+                    btn.dataset.theme = item.theme; btn.dataset.cat = cat;
                     grid.appendChild(btn);
                 });
-
                 group.appendChild(grid);
                 container.appendChild(group);
             });
         }
 
-        // 4. 更新開始按鈕狀態
-        function updateStartButton() {
-            const selectedItems = document.querySelectorAll('.cat-item.selected');
-            const startBtn = document.getElementById('start-btn');
-            
-            let totalWords = 0;
-            selectedPool = [];
-            
-            selectedItems.forEach(item => {
-                const words = JSON.parse(item.dataset.words);
-                selectedPool.push(...words);
-                totalWords += words.length;
+        function updateStartBtn() {
+            const selected = document.querySelectorAll('.cat-item.selected');
+            let total = 0;
+            selected.forEach(el => {
+                const item = allData[el.dataset.cat].find(i => i.theme === el.dataset.theme);
+                total += item.words.length;
             });
+            const btn = document.getElementById('start-btn');
+            btn.disabled = total === 0;
+            btn.innerText = total > 0 ? `🔥 開始 (${total}詞)` : "請先選擇類別";
+        }
 
-            if (totalWords > 0) {
-                startBtn.disabled = false;
-                startBtn.innerText = `🔥 開始 (${totalWords} 詞)`;
+        // --- 遊戲執行 ---
+        function cycleBattle() {
+            battleMode = (battleMode === 0) ? 2 : (battleMode === 2 ? 3 : 0);
+            const btn = document.getElementById('battle-btn');
+            btn.innerText = battleMode === 0 ? "OFF" : (battleMode + " 隊");
+            btn.style.background = battleMode > 0 ? "#27ae60" : "#555";
+        }
+
+        function requestPermission() {
+            if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(res => { if(res==='granted') setupGame(); });
+            } else { setupGame(); }
+        }
+
+        function setupGame() {
+            const selected = document.querySelectorAll('.cat-item.selected');
+            gamePool = [];
+            selected.forEach(el => {
+                const item = allData[el.dataset.cat].find(i => i.theme === el.dataset.theme);
+                item.words.forEach(w => gamePool.push({ word: w, theme: item.theme }));
+            });
+            gamePool.sort(() => Math.random() - 0.5);
+            currentTeamIdx = 0;
+            teamScores = [0, 0, 0];
+            startRound();
+        }
+
+        function startRound() {
+            gameResults = []; currentWordIdx = 0; isGameActive = true;
+            document.getElementById('home-screen').classList.remove('active');
+            document.getElementById('result-screen').classList.remove('active');
+            document.getElementById('game-screen').classList.add('active');
+            
+            if(battleMode > 0) {
+                const tl = document.getElementById('team-label');
+                tl.style.display = 'block'; tl.innerText = `隊伍 ${currentTeamIdx + 1}`;
+            }
+
+            let timeLeft = parseInt(document.getElementById('time-val').innerText);
+            document.getElementById('game-timer').innerText = timeLeft + "s";
+            if(timer) clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                document.getElementById('game-timer').innerText = timeLeft + "s";
+                if(timeLeft <= 0) finishRound();
+            }, 1000);
+
+            window.addEventListener('deviceorientation', handleMotion);
+            nextWord();
+        }
+
+        function nextWord() {
+            if(currentWordIdx >= gamePool.length) { finishRound(); return; }
+            const data = gamePool[currentWordIdx];
+            document.getElementById('word-display').innerText = data.word;
+            document.getElementById('word-cat-hint').innerText = data.theme;
+        }
+
+        function handleMotion(e) {
+            if(!isGameActive || Date.now() - lastActionTime < 1000) return;
+            if(e.beta > 60) handleAnswer(true);
+            else if(e.beta < -30) handleAnswer(false);
+        }
+
+        function handleAnswer(correct) {
+            if(!isGameActive) return;
+            lastActionTime = Date.now();
+            gameResults.push({ word: gamePool[currentWordIdx].word, correct });
+            document.getElementById('word-display').style.color = correct ? 'var(--success)' : 'var(--fail)';
+            setTimeout(() => {
+                document.getElementById('word-display').style.color = 'white';
+                currentWordIdx++; nextWord();
+            }, 200);
+        }
+
+        function finishRound() {
+            isGameActive = false;
+            clearInterval(timer);
+            window.removeEventListener('deviceorientation', handleMotion);
+            
+            // 紀錄該隊分數
+            const currentScore = gameResults.filter(r => r.correct).length;
+            teamScores[currentTeamIdx] = currentScore;
+            
+            showResults(currentScore);
+        }
+
+        function showResults(score) {
+            document.getElementById('game-screen').classList.remove('active');
+            document.getElementById('result-screen').classList.add('active');
+            
+            document.getElementById('final-score').innerText = score;
+            
+            // 執行 Ranking Title 邏輯
+            updateRank(score, gameResults.length);
+            
+            renderResultList();
+
+            const nextBtn = document.getElementById('next-team-btn');
+            if(battleMode > 0 && currentTeamIdx < battleMode - 1) {
+                nextBtn.style.display = 'block';
             } else {
-                startBtn.disabled = true;
-                startBtn.innerText = "請先選擇類別";
+                nextBtn.style.display = 'none';
             }
         }
 
-        // 5. 遊戲啟動 (簡化版)
-        function startGame() {
-            if (selectedPool.length === 0) return;
-            
-            // 洗牌
-            selectedPool.sort(() => Math.random() - 0.5);
-            
-            document.getElementById('home-screen').classList.remove('active');
-            document.getElementById('game-screen').classList.add('active');
-            
-            let timeLeft = parseInt(document.getElementById('time-val').innerText);
-            runGame(timeLeft);
+        function renderResultList() {
+            const container = document.getElementById('result-list-container');
+            container.innerHTML = gameResults.map((r, i) => `
+                <div class="result-item" onclick="toggleResult(${i})">
+                    <span>${r.word}</span>
+                    <span class="${r.correct?'correct':'skip'}">${r.correct?'✅ 正確':'Pass'}</span>
+                </div>
+            `).join('');
         }
 
-        function runGame(seconds) {
-            const timerDiv = document.getElementById('timer-display');
-            const wordDiv = document.getElementById('word-display');
-            
-            let currentIdx = 0;
-            wordDiv.innerText = selectedPool[currentIdx];
-
-            const timer = setInterval(() => {
-                seconds--;
-                timerDiv.innerText = seconds + "s";
-                if (seconds <= 0) {
-                    clearInterval(timer);
-                    alert("時間到！遊戲結束");
-                    location.reload();
-                }
-            }, 1000);
-
-            // 點擊畫面換下一題 (簡單模擬)
-            document.getElementById('game-screen').onclick = () => {
-                currentIdx++;
-                if (currentIdx < selectedPool.length) {
-                    wordDiv.innerText = selectedPool[currentIdx];
-                } else {
-                    alert("完咗題庫啦！");
-                    location.reload();
-                }
-            };
+        function toggleResult(idx) {
+            gameResults[idx].correct = !gameResults[idx].correct;
+            const newScore = gameResults.filter(r => r.correct).length;
+            teamScores[currentTeamIdx] = newScore;
+            document.getElementById('final-score').innerText = newScore;
+            updateRank(newScore, gameResults.length);
+            renderResultList();
         }
 
-        // 啟動
-        loadSheet();
+        function nextRound() {
+            currentTeamIdx++;
+            startRound();
+        }
+
+        function exitGame() { if(confirm("確定退出？")) location.reload(); }
+        function resetGame() { location.reload(); }
+
+        loadData();
     </script>
 </body>
 </html>
