@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>派對大電視 v7.9</title>
+    <title>派對大電視 v8.0</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
@@ -21,27 +21,48 @@
         .screen { display: none; flex-direction: column; align-items: center; height: 100%; width: 100%; overflow-y: auto; padding: calc(15px + var(--safe-top)) 20px calc(20px + var(--safe-bottom)) 20px; }
         .screen.active { display: flex; }
 
-        /* --- UI: Header & Groups --- */
+        /* --- UI: 設定與卡片 --- */
         .config-card { background: var(--card-bg); width: 100%; max-width: 500px; border-radius: 15px; padding: 12px; margin-bottom: 12px; }
         .config-row { display: flex; justify-content: space-between; align-items: center; margin: 6px 0; }
-        .cat-group { width: 100%; max-width: 500px; margin-bottom: 15px; text-align: left; }
-        .group-header { font-size: 0.85rem; color: var(--accent); font-weight: bold; margin: 8px 0 6px 5px; }
+        
+        /* 分類顯示樣式 (恢復 v7.5 風格) */
+        .cat-group { width: 100%; max-width: 500px; margin-bottom: 20px; text-align: left; }
+        .group-header { 
+            font-size: 1rem; color: var(--accent); font-weight: bold; margin: 0 0 8px 5px; 
+            display: flex; align-items: center;
+        }
+        .group-header::before { content: '📂 '; margin-right: 5px; font-size: 1.1rem; }
+        
         .cat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
-        .cat-item { background: #ffffff; color: #333; padding: 12px 5px; border-radius: 12px; text-align: center; font-weight: bold; font-size: 0.85rem; cursor: pointer; box-shadow: 0 4px 0 #bdc3c7; transition: 0.1s; }
-        .cat-item.selected { background: var(--selected-bg) !important; color: white !important; box-shadow: 0 4px 0 #0c2461; transform: translateY(2px); }
-        .cat-item.selected::after { content: " ✅"; font-size: 0.7rem; }
+        
+        .cat-item { 
+            background: #ffffff; color: #333; padding: 15px 5px; border-radius: 12px; 
+            text-align: center; font-weight: bold; font-size: 0.9rem; cursor: pointer;
+            box-shadow: 0 4px 0 #bdc3c7; transition: transform 0.1s, background 0.2s;
+        }
+        .cat-item:active { transform: translateY(4px); box-shadow: none; }
+        .cat-item.selected { 
+            background: var(--selected-bg) !important; color: white !important; 
+            box-shadow: 0 4px 0 #0c2461; transform: translateY(2px);
+        }
+        .cat-item.selected::after { content: " ✅"; font-size: 0.8rem; }
 
-        /* --- UI: Results --- */
+        /* --- UI: 結果與按鈕 --- */
         #rank-title { font-size: 1.5rem; color: var(--accent); font-weight: bold; margin-bottom: 5px; letter-spacing: 2px; }
-        .result-item { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
-
-        /* --- Buttons --- */
+        .result-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
+        
         button.main-btn { background: var(--accent); color: white; border: none; padding: 16px; font-size: 1.1rem; border-radius: 50px; font-weight: bold; box-shadow: 0 6px 0 #b37400; width: 100%; max-width: 300px; margin-top: 10px; }
-        button.main-btn:disabled { opacity: 0.4; box-shadow: none; }
-        .toggle-btn { background: #555; border: none; color: white; padding: 4px 12px; border-radius: 8px; font-weight: bold; }
+        button.main-btn:disabled { opacity: 0.4; box-shadow: none; background: #7f8c8d; cursor: not-allowed; }
+        .toggle-btn { background: #555; border: none; color: white; padding: 4px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 
-        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-content { background: #2c3e50; padding: 25px; border-radius: 20px; width: 85%; max-width: 400px; border: 2px solid var(--accent); }
+        /* --- Loader --- */
+        #loader-box { margin-top: 20px; text-align: center; }
+        .spinner { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid var(--accent); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 10px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- Modal --- */
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .modal-content { background: #2c3e50; padding: 25px; border-radius: 20px; width: 85%; max-width: 400px; border: 2px solid var(--accent); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     </style>
 </head>
 <body>
@@ -61,7 +82,7 @@
     </div>
 
     <div id="home-screen" class="screen active">
-        <h2 style="margin:0 0 10px 0;">📺 派對大電視 v7.9</h2>
+        <h2 style="margin:0 0 10px 0;">📺 派對大電視 v8.0</h2>
         
         <div class="config-card">
             <div class="config-row">
@@ -78,39 +99,46 @@
             </div>
         </div>
 
-        <p style="margin:0 0 5px 0; font-size:0.8rem; width:100%; text-align:left; opacity:0.7;">請選擇類別 (支持多選):</p>
+        <p style="margin:0 0 10px 0; font-size:0.85rem; width:100%; text-align:left; opacity:0.8;">請選擇類別 (支持多選):</p>
+        
+        <div id="loader-box">
+            <div class="spinner"></div>
+            <div style="font-size:0.8rem; opacity:0.7;">正在讀取題庫...</div>
+        </div>
+        
         <div id="cat-container" style="width:100%; flex:1;"></div>
 
         <button id="start-btn" class="main-btn" onclick="requestPermission()" disabled>請先選擇類別</button>
-        <button onclick="openModal()" style="background:none; border:1px solid #555; color:#aaa; padding:8px 20px; border-radius:20px; font-size:0.7rem; margin:10px 0;">⚙️ 編輯詞語 / 設定</button>
+        <button onclick="openModal()" style="background:none; border:1px solid #555; color:#aaa; padding:8px 20px; border-radius:20px; font-size:0.7rem; margin:15px 0 5px 0;">⚙️ 編輯詞語 / 設定</button>
     </div>
 
     <div id="game-screen" class="screen">
         <div style="width:100%; display:flex; justify-content:space-between; align-items:center;">
             <button onclick="exitGame()" style="font-size:1.5rem; background:none; border:none; color:white;">❌</button>
-            <div id="team-label" style="background:var(--accent); padding:2px 12px; border-radius:10px; font-weight:bold; display:none;">隊伍 1</div>
-            <div id="game-timer" style="font-size:1.5rem; font-weight:bold; font-variant-numeric: tabular-nums;">60s</div>
+            <div id="team-label" style="background:var(--accent); padding:4px 15px; border-radius:15px; font-weight:bold; display:none;">隊伍 1</div>
+            <div id="game-timer" style="font-size:1.6rem; font-weight:bold; font-variant-numeric: tabular-nums;">60s</div>
         </div>
         <div style="flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; width:100%;">
-            <div id="word-cat-hint" style="color:var(--accent); font-weight:bold; margin-bottom:10px;">主題</div>
-            <div id="word-display" style="font-size:clamp(2.5rem, 15vw, 6rem); font-weight:900; text-align:center;">READY</div>
+            <div id="word-cat-hint" style="color:var(--accent); font-weight:bold; margin-bottom:15px; font-size:1.2rem; opacity:0.9;"></div>
+            <div id="word-display" style="font-size:clamp(3rem, 15vw, 6rem); font-weight:900; text-align:center; line-height:1.2; text-shadow:0 5px 15px rgba(0,0,0,0.5);">READY</div>
         </div>
-        <div style="width:100%; display:flex; gap:10px; padding-bottom:10px;">
-            <button onclick="handleAnswer(false)" style="flex:1; padding:20px; border-radius:15px; border:none; background:var(--fail); color:white; font-weight:bold;">PASS</button>
-            <button onclick="handleAnswer(true)" style="flex:1; padding:20px; border-radius:15px; border:none; background:var(--success); color:white; font-weight:bold;">正確</button>
+        <div style="width:100%; display:flex; gap:15px; padding-bottom:10px;">
+            <button onclick="handleAnswer(false)" style="flex:1; padding:20px; border-radius:15px; border:none; background:var(--fail); color:white; font-weight:bold; font-size:1.2rem; box-shadow:0 5px 0 #922b21;">PASS</button>
+            <button onclick="handleAnswer(true)" style="flex:1; padding:20px; border-radius:15px; border:none; background:var(--success); color:white; font-weight:bold; font-size:1.2rem; box-shadow:0 5px 0 #1e8449;">正確</button>
         </div>
     </div>
 
     <div id="result-screen" class="screen">
-        <div id="rank-title">稱號載入中...</div>
-        <div id="final-score" style="font-size:4.5rem; font-weight:900; color:var(--accent); line-height:1;">0</div>
-        <div style="margin:5px 0 15px 0; font-size:0.8rem; opacity:0.5;">點擊題目可手動改分</div>
+        <div id="rank-title">稱號計算中...</div>
+        <div id="final-score" style="font-size:5rem; font-weight:900; color:var(--accent); line-height:1; margin:10px 0;">0</div>
+        <div style="margin:0 0 15px 0; font-size:0.8rem; opacity:0.6;">(點擊題目可手動改分)</div>
         <div id="result-list-container" style="width:100%; max-width:500px; background:rgba(0,0,0,0.2); border-radius:15px; flex:1; overflow-y:auto; padding:5px;"></div>
         <button id="next-team-btn" class="main-btn" onclick="nextRound()" style="display:none; background:var(--success);">下一隊開始</button>
         <button onclick="resetGame()" class="main-btn" style="background:white; color:#333; box-shadow:0 6px 0 #bdc3c7;">返回主頁</button>
     </div>
 
     <script>
+        // 使用你提供的正確 Google Sheet CSV 連結
         const CSV_URL = 'https://docs.google.com/spreadsheets/d/1xaPXAnYrABkXFDm7JQ_NIfvQkwT7n7WLSKnQAS39o8Q/export?format=csv&gid=0';
         
         let allData = {};
@@ -125,74 +153,78 @@
         let isGameActive = false;
         let lastActionTime = 0;
 
-        // --- 核心邏輯：稱號等級 ---
-        function updateRank(score, total) {
-            const pct = total > 0 ? (score / total) * 100 : 0;
-            let title = "氣氛破壞者";
-
-            if (isSoundOn) {
-                if (pct >= 85) title = "派對之神";
-                else if (pct >= 40) title = "普通市民";
-            } else {
-                if (pct >= 70) title = "派對之神";
-                else if (pct >= 30) title = "普通市民";
-            }
-            
-            document.getElementById('rank-title').innerText = title;
-            
-            // 如果攞到「神」級，爆發慶祝
-            if (title.includes("神") && !isGameActive) {
-                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-            }
-        }
-
-        // --- UI 操作 ---
-        function toggleSound() {
-            isSoundOn = !isSoundOn;
-            document.getElementById('sound-btn').innerText = isSoundOn ? "ON" : "OFF";
-        }
-
-        function openModal() { document.getElementById('modal-overlay').style.display = 'flex'; }
-        function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
-        function forceSync() { loadData(); closeModal(); }
-
-        // --- 讀取數據 ---
+        // --- 核心修復：更強的數據讀取邏輯 ---
         async function loadData() {
+            document.getElementById('loader-box').style.display = 'block';
+            document.getElementById('cat-container').innerHTML = '';
+            
             try {
-                const res = await fetch(CSV_URL + '?t=' + Date.now());
+                const res = await fetch(CSV_URL + '&t=' + Date.now());
                 const text = await res.text();
+                
                 Papa.parse(text, {
-                    header: true, skipEmptyLines: true,
+                    header: true,
+                    skipEmptyLines: true,
+                    transformHeader: (h) => h.trim(), // 關鍵修復：自動清除 Header 的空格
                     complete: (results) => {
                         allData = {};
+                        let count = 0;
+                        
                         results.data.forEach(row => {
-                            const cat = row.Category || "其他";
-                            const theme = row.Theme || "主題";
-                            const words = row.Words ? row.Words.split(/[|，,]+/).map(s=>s.trim()).filter(s=>s) : [];
-                            if(!allData[cat]) allData[cat] = [];
-                            allData[cat].push({ theme, words });
+                            // 容錯讀取：如果 Category 是 undefined，嘗試用 keys[0]
+                            const cat = row.Category || row[Object.keys(row)[0]] || "其他";
+                            const theme = row.Theme || row[Object.keys(row)[1]] || "主題";
+                            let wordsRaw = row.Words || row[Object.keys(row)[2]];
+                            
+                            if (wordsRaw) {
+                                const words = wordsRaw.split(/[|，,]+/).map(s=>s.trim()).filter(s=>s);
+                                if (words.length > 0) {
+                                    if(!allData[cat]) allData[cat] = [];
+                                    allData[cat].push({ theme, words });
+                                    count++;
+                                }
+                            }
                         });
-                        renderUI();
+
+                        document.getElementById('loader-box').style.display = 'none';
+                        if (count === 0) {
+                            document.getElementById('cat-container').innerHTML = '<div style="text-align:center; margin-top:20px; color:#e74c3c;">⚠️ 找不到題目<br>請檢查 Google Sheet 格式 (Col A, B, C)</div>';
+                        } else {
+                            renderUI();
+                        }
                     }
                 });
-            } catch (e) { console.error("Data Load Error"); }
+            } catch (e) { 
+                document.getElementById('loader-box').innerHTML = '<span style="color:red">網絡錯誤，請刷新重試</span>';
+            }
         }
 
         function renderUI() {
             const container = document.getElementById('cat-container');
             container.innerHTML = '';
+            
             Object.keys(allData).forEach(cat => {
                 const group = document.createElement('div');
                 group.className = 'cat-group';
-                group.innerHTML = `<div class="group-header">📂 ${cat}</div>`;
+                
+                // 標題樣式 (修復顯示問題)
+                group.innerHTML = `<div class="group-header">${cat}</div>`;
+                
                 const grid = document.createElement('div');
                 grid.className = 'cat-grid';
+                
                 allData[cat].forEach(item => {
                     const btn = document.createElement('div');
                     btn.className = 'cat-item';
                     btn.innerText = item.theme;
-                    btn.onclick = () => { btn.classList.toggle('selected'); updateStartBtn(); };
-                    btn.dataset.theme = item.theme; btn.dataset.cat = cat;
+                    // 保存數據到元素以便讀取
+                    btn.dataset.theme = item.theme;
+                    btn.dataset.cat = cat;
+                    
+                    btn.onclick = () => { 
+                        btn.classList.toggle('selected'); 
+                        updateStartBtn(); 
+                    };
                     grid.appendChild(btn);
                 });
                 group.appendChild(grid);
@@ -204,22 +236,38 @@
             const selected = document.querySelectorAll('.cat-item.selected');
             let total = 0;
             selected.forEach(el => {
-                const item = allData[el.dataset.cat].find(i => i.theme === el.dataset.theme);
-                total += item.words.length;
+                const catData = allData[el.dataset.cat];
+                if(catData) {
+                    const item = catData.find(i => i.theme === el.dataset.theme);
+                    if(item) total += item.words.length;
+                }
             });
             const btn = document.getElementById('start-btn');
             btn.disabled = total === 0;
             btn.innerText = total > 0 ? `🔥 開始 (${total}詞)` : "請先選擇類別";
+            // 按鈕變色提醒
+            btn.style.background = total > 0 ? "var(--accent)" : "#7f8c8d";
         }
 
-        // --- 遊戲執行 ---
+        // --- 彈窗與設定 ---
+        function openModal() { document.getElementById('modal-overlay').style.display = 'flex'; }
+        function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
+        function forceSync() { loadData(); closeModal(); }
+        
         function cycleBattle() {
             battleMode = (battleMode === 0) ? 2 : (battleMode === 2 ? 3 : 0);
             const btn = document.getElementById('battle-btn');
             btn.innerText = battleMode === 0 ? "OFF" : (battleMode + " 隊");
-            btn.style.background = battleMode > 0 ? "#27ae60" : "#555";
+            btn.style.background = battleMode > 0 ? "var(--success)" : "#555";
         }
 
+        function toggleSound() {
+            isSoundOn = !isSoundOn;
+            document.getElementById('sound-btn').innerText = isSoundOn ? "ON" : "OFF";
+            document.getElementById('sound-btn').style.background = isSoundOn ? "var(--success)" : "#555";
+        }
+
+        // --- 遊戲流程 ---
         function requestPermission() {
             if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
                 DeviceOrientationEvent.requestPermission().then(res => { if(res==='granted') setupGame(); });
@@ -245,13 +293,15 @@
             document.getElementById('result-screen').classList.remove('active');
             document.getElementById('game-screen').classList.add('active');
             
+            const tl = document.getElementById('team-label');
             if(battleMode > 0) {
-                const tl = document.getElementById('team-label');
                 tl.style.display = 'block'; tl.innerText = `隊伍 ${currentTeamIdx + 1}`;
-            }
+                tl.style.backgroundColor = ['#e74c3c', '#3498db', '#f1c40f'][currentTeamIdx];
+            } else { tl.style.display = 'none'; }
 
             let timeLeft = parseInt(document.getElementById('time-val').innerText);
             document.getElementById('game-timer').innerText = timeLeft + "s";
+            
             if(timer) clearInterval(timer);
             timer = setInterval(() => {
                 timeLeft--;
@@ -272,6 +322,7 @@
 
         function handleMotion(e) {
             if(!isGameActive || Date.now() - lastActionTime < 1000) return;
+            // 體感邏輯: 點頭(Beta > 60)正確, 抬頭(Beta < -30) Pass
             if(e.beta > 60) handleAnswer(true);
             else if(e.beta < -30) handleAnswer(false);
         }
@@ -280,9 +331,12 @@
             if(!isGameActive) return;
             lastActionTime = Date.now();
             gameResults.push({ word: gamePool[currentWordIdx].word, correct });
-            document.getElementById('word-display').style.color = correct ? 'var(--success)' : 'var(--fail)';
+            
+            const display = document.getElementById('word-display');
+            display.style.color = correct ? 'var(--success)' : 'var(--fail)';
+            
             setTimeout(() => {
-                document.getElementById('word-display').style.color = 'white';
+                display.style.color = 'white';
                 currentWordIdx++; nextWord();
             }, 200);
         }
@@ -292,24 +346,31 @@
             clearInterval(timer);
             window.removeEventListener('deviceorientation', handleMotion);
             
-            // 紀錄該隊分數
-            const currentScore = gameResults.filter(r => r.correct).length;
-            teamScores[currentTeamIdx] = currentScore;
-            
-            showResults(currentScore);
+            const score = gameResults.filter(r => r.correct).length;
+            teamScores[currentTeamIdx] = score;
+            showResults(score);
         }
 
         function showResults(score) {
             document.getElementById('game-screen').classList.remove('active');
             document.getElementById('result-screen').classList.add('active');
-            
             document.getElementById('final-score').innerText = score;
             
-            // 執行 Ranking Title 邏輯
-            updateRank(score, gameResults.length);
-            
-            renderResultList();
+            // 稱號判定
+            const pct = gameResults.length > 0 ? (score / gameResults.length) * 100 : 0;
+            let title = "氣氛破壞者 🥶";
+            if (isSoundOn) { // 開聲: 要求較高
+                if (pct >= 85) title = "派對之神 👑";
+                else if (pct >= 40) title = "普通市民 😐";
+            } else { // 靜音: 要求較低
+                if (pct >= 70) title = "派對之神 👑";
+                else if (pct >= 30) title = "普通市民 😐";
+            }
+            document.getElementById('rank-title').innerText = title;
+            if (title.includes("神")) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
 
+            renderResultList();
+            
             const nextBtn = document.getElementById('next-team-btn');
             if(battleMode > 0 && currentTeamIdx < battleMode - 1) {
                 nextBtn.style.display = 'block';
@@ -323,7 +384,9 @@
             container.innerHTML = gameResults.map((r, i) => `
                 <div class="result-item" onclick="toggleResult(${i})">
                     <span>${r.word}</span>
-                    <span class="${r.correct?'correct':'skip'}">${r.correct?'✅ 正確':'Pass'}</span>
+                    <span style="color:${r.correct?'var(--success)':'var(--fail)'}; font-weight:bold;">
+                        ${r.correct?'✅ 正確':'Pass'}
+                    </span>
                 </div>
             `).join('');
         }
@@ -333,18 +396,15 @@
             const newScore = gameResults.filter(r => r.correct).length;
             teamScores[currentTeamIdx] = newScore;
             document.getElementById('final-score').innerText = newScore;
-            updateRank(newScore, gameResults.length);
+            // 重新計算稱號 (可選)
             renderResultList();
         }
 
-        function nextRound() {
-            currentTeamIdx++;
-            startRound();
-        }
-
-        function exitGame() { if(confirm("確定退出？")) location.reload(); }
+        function nextRound() { currentTeamIdx++; startRound(); }
+        function exitGame() { if(confirm("確定結束遊戲？")) location.reload(); }
         function resetGame() { location.reload(); }
 
+        // 啟動讀取
         loadData();
     </script>
 </body>
